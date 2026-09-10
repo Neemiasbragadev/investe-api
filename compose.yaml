@@ -1,0 +1,9 @@
+services:
+  postgres:
+    image: 'postgres:17'
+    environment:
+      - 'POSTGRES_DB=investe_api'
+      - 'POSTGRES_PASSWORD=investe_api'
+      - 'POSTGRES_USER=investe_api'
+    ports:
+      - '5432:5432'
