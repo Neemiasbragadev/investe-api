@@ -1,6 +1,7 @@
 package br.com.neemiasbraga.investeapi.historico;
 
 import br.com.neemiasbraga.investeapi.agregador.AgregadoResponse;
+import br.com.neemiasbraga.investeapi.core.StatusConsulta;
 import org.springframework.stereotype.Service;
 
 @Service

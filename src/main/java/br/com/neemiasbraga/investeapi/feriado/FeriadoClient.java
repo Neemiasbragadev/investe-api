@@ -1,6 +1,9 @@
 package br.com.neemiasbraga.investeapi.feriado;
 
+import br.com.neemiasbraga.investeapi.core.MetricasFontes;
 import br.com.neemiasbraga.investeapi.core.Resultado;
+import br.com.neemiasbraga.investeapi.core.StatusConsulta;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
@@ -20,8 +23,10 @@ import java.util.List;
 public class FeriadoClient {
 
     private final RestClient restClient;
+    private final MetricasFontes metricasFontes;
 
-    public FeriadoClient(RestClient.Builder builder, FeriadoApiProperties properties) {
+    public FeriadoClient(RestClient.Builder builder, FeriadoApiProperties properties,
+                          MetricasFontes metricasFontes) {
         var httpClient = HttpClient.newBuilder()
                 .connectTimeout(properties.connectTimeout())
                 .build();
@@ -32,9 +37,21 @@ public class FeriadoClient {
                 .baseUrl(properties.baseUrl())
                 .requestFactory(requestFactory)
                 .build();
+        this.metricasFontes = metricasFontes;
     }
 
+    /**
+     * Feriados de um ano nao mudam, entao o resultado fica em cache (ver
+     * CacheConfig). "unless" garante que so Sucesso eh cacheado.
+     */
+    @Cacheable(value = "feriados", unless = "#result.getClass().getSimpleName() != 'Sucesso'")
     public Resultado<List<FeriadoBruta>> buscar(int ano) {
+        Resultado<List<FeriadoBruta>> resultado = executar(ano);
+        metricasFontes.registrar("feriado", StatusConsulta.de(resultado));
+        return resultado;
+    }
+
+    private Resultado<List<FeriadoBruta>> executar(int ano) {
         try {
             List<FeriadoBruta> resposta = restClient.get()
                     .uri("/api/feriados/v1/{ano}", ano)

@@ -1,7 +1,9 @@
 package br.com.neemiasbraga.investeapi.feriado;
 
+import br.com.neemiasbraga.investeapi.core.MetricasFontes;
 import br.com.neemiasbraga.investeapi.core.Resultado;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.springframework.web.client.RestClient;
@@ -22,7 +24,7 @@ class FeriadoClientTest {
 
     private FeriadoClient client(Duration readTimeout) {
         var properties = new FeriadoApiProperties(wireMock.baseUrl(), Duration.ofSeconds(2), readTimeout);
-        return new FeriadoClient(RestClient.builder(), properties);
+        return new FeriadoClient(RestClient.builder(), properties, new MetricasFontes(new SimpleMeterRegistry()));
     }
 
     @Test

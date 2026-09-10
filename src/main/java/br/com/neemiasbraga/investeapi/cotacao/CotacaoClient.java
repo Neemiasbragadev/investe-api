@@ -1,6 +1,8 @@
 package br.com.neemiasbraga.investeapi.cotacao;
 
+import br.com.neemiasbraga.investeapi.core.MetricasFontes;
 import br.com.neemiasbraga.investeapi.core.Resultado;
+import br.com.neemiasbraga.investeapi.core.StatusConsulta;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
@@ -20,8 +22,10 @@ import java.util.Map;
 public class CotacaoClient {
 
     private final RestClient restClient;
+    private final MetricasFontes metricasFontes;
 
-    public CotacaoClient(RestClient.Builder builder, CotacaoApiProperties properties) {
+    public CotacaoClient(RestClient.Builder builder, CotacaoApiProperties properties,
+                          MetricasFontes metricasFontes) {
         var httpClient = HttpClient.newBuilder()
                 .connectTimeout(properties.connectTimeout())
                 .build();
@@ -32,9 +36,16 @@ public class CotacaoClient {
                 .baseUrl(properties.baseUrl())
                 .requestFactory(requestFactory)
                 .build();
+        this.metricasFontes = metricasFontes;
     }
 
     public Resultado<CotacaoBruta> buscar(String par) {
+        Resultado<CotacaoBruta> resultado = executar(par);
+        metricasFontes.registrar("cotacao", StatusConsulta.de(resultado));
+        return resultado;
+    }
+
+    private Resultado<CotacaoBruta> executar(String par) {
         try {
             Map<String, CotacaoBruta> resposta = restClient.get()
                     .uri("/json/last/{par}", par)

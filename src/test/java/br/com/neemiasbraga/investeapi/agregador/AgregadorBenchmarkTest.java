@@ -2,11 +2,13 @@ package br.com.neemiasbraga.investeapi.agregador;
 
 import br.com.neemiasbraga.investeapi.cep.CepApiProperties;
 import br.com.neemiasbraga.investeapi.cep.CepClient;
+import br.com.neemiasbraga.investeapi.core.MetricasFontes;
 import br.com.neemiasbraga.investeapi.cotacao.CotacaoApiProperties;
 import br.com.neemiasbraga.investeapi.cotacao.CotacaoClient;
 import br.com.neemiasbraga.investeapi.feriado.FeriadoApiProperties;
 import br.com.neemiasbraga.investeapi.feriado.FeriadoClient;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -46,12 +48,13 @@ class AgregadorBenchmarkTest {
 
     private AgregadorService agregadorService() {
         var timeout = Duration.ofSeconds(5);
+        var metricasFontes = new MetricasFontes(new SimpleMeterRegistry());
         var cotacaoClient = new CotacaoClient(RestClient.builder(),
-                new CotacaoApiProperties(wireMock.baseUrl(), timeout, timeout));
+                new CotacaoApiProperties(wireMock.baseUrl(), timeout, timeout), metricasFontes);
         var cepClient = new CepClient(RestClient.builder(),
-                new CepApiProperties(wireMock.baseUrl(), timeout, timeout));
+                new CepApiProperties(wireMock.baseUrl(), timeout, timeout), metricasFontes);
         var feriadoClient = new FeriadoClient(RestClient.builder(),
-                new FeriadoApiProperties(wireMock.baseUrl(), timeout, timeout));
+                new FeriadoApiProperties(wireMock.baseUrl(), timeout, timeout), metricasFontes);
 
         return new AgregadorService(cotacaoClient, cepClient, feriadoClient, executor);
     }

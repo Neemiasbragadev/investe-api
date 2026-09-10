@@ -4,12 +4,14 @@ import br.com.neemiasbraga.investeapi.core.Resultado;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(CotacaoController.class)
@@ -36,18 +38,23 @@ class CotacaoControllerTest {
     }
 
     @Test
-    void retorna502QuandoFalha() throws Exception {
+    void retorna502ComProblemDetailQuandoFalha() throws Exception {
         when(cotacaoClient.buscar("XXX-BRL")).thenReturn(new Resultado.Falha<>("erro no provedor", 502));
 
         mockMvc.perform(get("/api/cotacoes/XXX-BRL"))
-                .andExpect(status().isBadGateway());
+                .andExpect(status().isBadGateway())
+                .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.status").value(502))
+                .andExpect(jsonPath("$.detail").value("erro no provedor"));
     }
 
     @Test
-    void retorna504QuandoTimeout() throws Exception {
+    void retorna504ComProblemDetailQuandoTimeout() throws Exception {
         when(cotacaoClient.buscar("USD-BRL")).thenReturn(new Resultado.Timeout<>("demorou demais"));
 
         mockMvc.perform(get("/api/cotacoes/USD-BRL"))
-                .andExpect(status().isGatewayTimeout());
+                .andExpect(status().isGatewayTimeout())
+                .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.detail").value("demorou demais"));
     }
 }

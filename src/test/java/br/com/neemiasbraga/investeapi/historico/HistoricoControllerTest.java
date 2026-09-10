@@ -1,5 +1,6 @@
 package br.com.neemiasbraga.investeapi.historico;
 
+import br.com.neemiasbraga.investeapi.core.StatusConsulta;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;

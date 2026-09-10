@@ -1,5 +1,6 @@
 package br.com.neemiasbraga.investeapi.historico;
 
+import br.com.neemiasbraga.investeapi.core.StatusConsulta;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;

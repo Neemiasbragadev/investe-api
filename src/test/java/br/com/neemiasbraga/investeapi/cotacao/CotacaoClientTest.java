@@ -1,7 +1,9 @@
 package br.com.neemiasbraga.investeapi.cotacao;
 
+import br.com.neemiasbraga.investeapi.core.MetricasFontes;
 import br.com.neemiasbraga.investeapi.core.Resultado;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.springframework.web.client.RestClient;
@@ -21,7 +23,7 @@ class CotacaoClientTest {
 
     private CotacaoClient client(Duration readTimeout) {
         var properties = new CotacaoApiProperties(wireMock.baseUrl(), Duration.ofSeconds(2), readTimeout);
-        return new CotacaoClient(RestClient.builder(), properties);
+        return new CotacaoClient(RestClient.builder(), properties, new MetricasFontes(new SimpleMeterRegistry()));
     }
 
     @Test

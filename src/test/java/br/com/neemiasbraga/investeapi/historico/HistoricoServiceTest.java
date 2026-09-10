@@ -2,6 +2,7 @@ package br.com.neemiasbraga.investeapi.historico;
 
 import br.com.neemiasbraga.investeapi.agregador.AgregadoResponse;
 import br.com.neemiasbraga.investeapi.core.Resultado;
+import br.com.neemiasbraga.investeapi.core.StatusConsulta;
 import br.com.neemiasbraga.investeapi.cotacao.CotacaoBruta;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
