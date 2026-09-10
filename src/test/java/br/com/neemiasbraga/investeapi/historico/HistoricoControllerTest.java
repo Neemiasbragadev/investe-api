@@ -24,6 +24,9 @@ class HistoricoControllerTest {
     @MockitoBean
     private HistoricoConsultaRepository repository;
 
+    @MockitoBean
+    private HistoricoService historicoService;
+
     @Test
     void listaHistoricoOrdenadoPorMaisRecente() throws Exception {
         var historico = new HistoricoConsulta("USD-BRL", "01310930", 2026,
@@ -58,5 +61,16 @@ class HistoricoControllerTest {
 
         mockMvc.perform(get("/api/historico/ultimo"))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void devolveTendenciaCalculada() throws Exception {
+        when(historicoService.calcularTendencia(2))
+                .thenReturn(List.of(new PontoTendencia(150.0), new PontoTendencia(250.0)));
+
+        mockMvc.perform(get("/api/historico/tendencia?janela=2"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].duracaoMediaMs").value(150.0))
+                .andExpect(jsonPath("$[1].duracaoMediaMs").value(250.0));
     }
 }

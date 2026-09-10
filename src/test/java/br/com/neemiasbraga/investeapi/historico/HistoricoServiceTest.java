@@ -9,9 +9,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Pageable;
+
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class HistoricoServiceTest {
@@ -42,5 +46,30 @@ class HistoricoServiceTest {
         assertThat(salvo.getCepStatus()).isEqualTo(StatusConsulta.FALHA);
         assertThat(salvo.getFeriadosStatus()).isEqualTo(StatusConsulta.TIMEOUT);
         assertThat(salvo.getDuracaoMs()).isEqualTo(321);
+    }
+
+    @Test
+    void calculaMediaMovelDaDuracaoComJanelaDeslizante() {
+        var historicoService = new HistoricoService(repository);
+
+        var c1 = consultaComDuracao(100);
+        var c2 = consultaComDuracao(200);
+        var c3 = consultaComDuracao(300);
+        var c4 = consultaComDuracao(400);
+
+        // repository devolve do mais recente para o mais antigo (c4..c1);
+        // calcularTendencia usa .reversed() para virar ordem cronologica.
+        when(repository.findAllByOrderByCriadoEmDesc(Pageable.unpaged()))
+                .thenReturn(List.of(c4, c3, c2, c1));
+
+        var tendencia = historicoService.calcularTendencia(2);
+
+        assertThat(tendencia).extracting(PontoTendencia::duracaoMediaMs)
+                .containsExactly(150.0, 250.0, 350.0);
+    }
+
+    private static HistoricoConsulta consultaComDuracao(long duracaoMs) {
+        return new HistoricoConsulta("USD-BRL", "01310930", 2026,
+                StatusConsulta.SUCESSO, StatusConsulta.SUCESSO, StatusConsulta.SUCESSO, duracaoMs);
     }
 }

@@ -13,9 +13,11 @@ import java.util.List;
 public class HistoricoController {
 
     private final HistoricoConsultaRepository repository;
+    private final HistoricoService historicoService;
 
-    public HistoricoController(HistoricoConsultaRepository repository) {
+    public HistoricoController(HistoricoConsultaRepository repository, HistoricoService historicoService) {
         this.repository = repository;
+        this.historicoService = historicoService;
     }
 
     @GetMapping("/api/historico")
@@ -37,5 +39,10 @@ public class HistoricoController {
         }
 
         return ResponseEntity.ok(recentes.getFirst());
+    }
+
+    @GetMapping("/api/historico/tendencia")
+    public List<PontoTendencia> tendencia(@RequestParam(defaultValue = "3") int janela) {
+        return historicoService.calcularTendencia(janela);
     }
 }
