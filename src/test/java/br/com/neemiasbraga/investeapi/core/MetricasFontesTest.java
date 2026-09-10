@@ -24,4 +24,19 @@ class MetricasFontesTest {
                 .tag("fonte", "cep").tag("status", "FALHA")
                 .counter().count()).isEqualTo(1.0);
     }
+
+    @Test
+    void listarResumoTrazTodosOsContadoresComFonteEStatus() {
+        var registry = new SimpleMeterRegistry();
+        var metricas = new MetricasFontes(registry);
+
+        metricas.registrar("cotacao", StatusConsulta.SUCESSO);
+        metricas.registrar("cep", StatusConsulta.FALHA);
+        metricas.registrar("cep", StatusConsulta.FALHA);
+
+        assertThat(metricas.listarResumo())
+                .containsExactlyInAnyOrder(
+                        new MetricaResumo("cotacao", "SUCESSO", 1.0),
+                        new MetricaResumo("cep", "FALHA", 2.0));
+    }
 }

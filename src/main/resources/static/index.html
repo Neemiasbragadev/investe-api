@@ -1,0 +1,470 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>investe-api — Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<style>
+  :root {
+    --bg: #0f172a;
+    --bg-panel: #1a2540;
+    --bg-panel-2: #16203a;
+    --border: #2a3a5c;
+    --text: #e6ecf7;
+    --text-muted: #93a3c2;
+    --accent: #5b8def;
+    --sucesso: #34d399;
+    --falha: #f87171;
+    --timeout: #fbbf24;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    padding: 24px;
+  }
+
+  .wrap { max-width: 1080px; margin: 0 auto; }
+
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 28px;
+  }
+
+  header h1 { margin: 0; font-size: 1.6rem; }
+  header p { margin: 4px 0 0; color: var(--text-muted); font-size: 0.9rem; }
+
+  .links a {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.85rem;
+    margin-left: 16px;
+  }
+  .links a:hover { text-decoration: underline; }
+
+  section {
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+
+  section h2 {
+    margin: 0 0 4px;
+    font-size: 1.05rem;
+  }
+
+  section .hint {
+    margin: 0 0 16px;
+    color: var(--text-muted);
+    font-size: 0.82rem;
+  }
+
+  form.busca {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: flex-end;
+  }
+
+  .campo { display: flex; flex-direction: column; gap: 4px; }
+  .campo label { font-size: 0.75rem; color: var(--text-muted); }
+  .campo input {
+    background: var(--bg-panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    padding: 8px 10px;
+    font-size: 0.9rem;
+    width: 140px;
+  }
+
+  button {
+    background: var(--accent);
+    color: #06122b;
+    border: none;
+    border-radius: 8px;
+    padding: 9px 18px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  button:hover { filter: brightness(1.08); }
+  button:disabled { opacity: 0.6; cursor: default; }
+
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 14px;
+    margin-top: 18px;
+  }
+
+  .card {
+    background: var(--bg-panel-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+  }
+
+  .card h3 { margin: 0 0 8px; font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+
+  .badge {
+    display: inline-block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 2px 9px;
+    border-radius: 999px;
+    margin-bottom: 10px;
+  }
+  .badge.SUCESSO { background: rgba(52,211,153,0.15); color: var(--sucesso); }
+  .badge.FALHA { background: rgba(248,113,113,0.15); color: var(--falha); }
+  .badge.TIMEOUT { background: rgba(251,191,36,0.15); color: var(--timeout); }
+
+  .card dl { margin: 0; font-size: 0.85rem; }
+  .card dt { color: var(--text-muted); display: inline; }
+  .card dd { display: inline; margin: 0 0 0 4px; }
+  .card .linha { margin-bottom: 4px; }
+  .card .feriado-item { font-size: 0.8rem; margin-bottom: 3px; }
+  .card .msg { font-size: 0.82rem; color: var(--text-muted); }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.83rem;
+  }
+  th, td {
+    text-align: left;
+    padding: 7px 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  th { color: var(--text-muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; }
+  td.status-cell span { font-weight: 600; }
+  td.status-cell .SUCESSO { color: var(--sucesso); }
+  td.status-cell .FALHA { color: var(--falha); }
+  td.status-cell .TIMEOUT { color: var(--timeout); }
+
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  .grid-2 > section { min-width: 0; }
+  @media (max-width: 800px) {
+    .grid-2 { grid-template-columns: 1fr; }
+  }
+
+  .tabela-scroll { overflow-x: auto; }
+
+  .vazio { color: var(--text-muted); font-size: 0.85rem; padding: 10px 0; }
+
+  .paralelismo {
+    display: flex;
+    gap: 24px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .barra-grupo { flex: 1; min-width: 220px; }
+  .barra-label { display: flex; justify-content: space-between; font-size: 0.82rem; margin-bottom: 4px; }
+  .barra-fundo { background: var(--bg-panel-2); border-radius: 6px; height: 14px; overflow: hidden; }
+  .barra-preenchida { height: 100%; border-radius: 6px; }
+  .barra-preenchida.sequencial { background: var(--falha); width: 100%; }
+  .barra-preenchida.paralelo { background: var(--sucesso); width: 26%; }
+
+  footer {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    margin-top: 30px;
+  }
+
+  canvas { max-height: 260px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div>
+      <h1>investe-api</h1>
+      <p>Agregador de dados públicos brasileiros — cotações, CEP e feriados, consultados em paralelo com virtual threads</p>
+    </div>
+    <div class="links">
+      <a href="/swagger-ui.html">Swagger UI</a>
+      <a href="https://github.com/Neemiasbragadev/investe-api" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </header>
+
+  <section>
+    <h2>Consultar</h2>
+    <p class="hint">Chama GET /api/agregado — as 3 fontes são buscadas ao mesmo tempo, cada uma numa virtual thread.</p>
+    <form class="busca" id="form-busca">
+      <div class="campo">
+        <label for="par">Par de moeda</label>
+        <input id="par" name="par" value="USD-BRL" required>
+      </div>
+      <div class="campo">
+        <label for="cep">CEP</label>
+        <input id="cep" name="cep" value="01310930" required>
+      </div>
+      <div class="campo">
+        <label for="ano">Ano (feriados)</label>
+        <input id="ano" name="ano" type="number" value="2026" required>
+      </div>
+      <button type="submit" id="btn-buscar">Buscar</button>
+    </form>
+
+    <div class="cards" id="cards-resultado"></div>
+  </section>
+
+  <div class="grid-2">
+    <section>
+      <h2>Histórico recente</h2>
+      <p class="hint">GET /api/historico</p>
+      <div id="historico-wrap">
+        <p class="vazio">Nenhuma consulta ainda.</p>
+      </div>
+    </section>
+
+    <section>
+      <h2>Tendência de duração</h2>
+      <p class="hint">GET /api/historico/tendencia — média móvel calculada com Stream Gatherers (Gatherers.windowSliding)</p>
+      <canvas id="grafico-tendencia"></canvas>
+      <p class="vazio" id="tendencia-vazio">Sem dados suficientes ainda.</p>
+    </section>
+  </div>
+
+  <section>
+    <h2>Métricas por fonte</h2>
+    <p class="hint">GET /api/metricas — contadores Micrometer (mesmos expostos em /actuator/prometheus)</p>
+    <canvas id="grafico-metricas"></canvas>
+    <p class="vazio" id="metricas-vazio">Nenhuma métrica registrada ainda.</p>
+  </section>
+
+  <section>
+    <h2>Paralelismo: sequencial vs paralelo</h2>
+    <p class="hint">Medido em AgregadorBenchmarkTest com 300ms de latência simulada nas 3 fontes (número fixo, documentado no README)</p>
+    <div class="paralelismo">
+      <div class="barra-grupo">
+        <div class="barra-label"><span>Sequencial</span><span>~1196 ms</span></div>
+        <div class="barra-fundo"><div class="barra-preenchida sequencial"></div></div>
+      </div>
+      <div class="barra-grupo">
+        <div class="barra-label"><span>Paralelo (virtual threads)</span><span>~308 ms</span></div>
+        <div class="barra-fundo"><div class="barra-preenchida paralelo"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    investe-api — Java 25 / Spring Boot 4.1 · projeto de portfólio
+  </footer>
+
+</div>
+
+<script>
+const STATUS_COLORS = { SUCESSO: '#34d399', FALHA: '#f87171', TIMEOUT: '#fbbf24' };
+
+function classificar(resultado) {
+  if (!resultado) return { status: 'FALHA', dado: null, mensagem: 'sem resposta' };
+  if (resultado.dado !== undefined) return { status: 'SUCESSO', dado: resultado.dado };
+  if (resultado.statusCode !== undefined) return { status: 'FALHA', mensagem: resultado.mensagem, statusCode: resultado.statusCode };
+  return { status: 'TIMEOUT', mensagem: resultado.mensagem };
+}
+
+function cardCotacao(resultado) {
+  const r = classificar(resultado);
+  let corpo;
+  if (r.status === 'SUCESSO') {
+    const d = r.dado;
+    corpo = `
+      <div class="linha"><dt>Par</dt><dd>${d.code}/${d.codein}</dd></div>
+      <div class="linha"><dt>Compra</dt><dd>${d.bid}</dd></div>
+      <div class="linha"><dt>Venda</dt><dd>${d.ask}</dd></div>
+      <div class="linha"><dt>Máx/Mín</dt><dd>${d.high} / ${d.low}</dd></div>`;
+  } else {
+    corpo = `<p class="msg">${r.mensagem ?? 'falha'}</p>`;
+  }
+  return `<div class="card"><h3>Cotação</h3><span class="badge ${r.status}">${r.status}</span><dl>${corpo}</dl></div>`;
+}
+
+function cardCep(resultado) {
+  const r = classificar(resultado);
+  let corpo;
+  if (r.status === 'SUCESSO') {
+    const d = r.dado;
+    corpo = `
+      <div class="linha"><dt>CEP</dt><dd>${d.cep}</dd></div>
+      <div class="linha"><dt>Rua</dt><dd>${d.street || '—'}</dd></div>
+      <div class="linha"><dt>Bairro</dt><dd>${d.neighborhood || '—'}</dd></div>
+      <div class="linha"><dt>Cidade/UF</dt><dd>${d.city}/${d.state}</dd></div>`;
+  } else {
+    corpo = `<p class="msg">${r.mensagem ?? 'falha'}</p>`;
+  }
+  return `<div class="card"><h3>CEP</h3><span class="badge ${r.status}">${r.status}</span><dl>${corpo}</dl></div>`;
+}
+
+function cardFeriados(resultado) {
+  const r = classificar(resultado);
+  let corpo;
+  if (r.status === 'SUCESSO') {
+    const lista = r.dado.slice(0, 6)
+        .map(f => `<div class="feriado-item">${f.date} — ${f.name}</div>`)
+        .join('');
+    const resto = r.dado.length > 6 ? `<div class="feriado-item">+ ${r.dado.length - 6} outros</div>` : '';
+    corpo = lista + resto || '<p class="msg">nenhum feriado</p>';
+  } else {
+    corpo = `<p class="msg">${r.mensagem ?? 'falha'}</p>`;
+  }
+  return `<div class="card"><h3>Feriados</h3><span class="badge ${r.status}">${r.status}</span><div>${corpo}</div></div>`;
+}
+
+async function buscar(evento) {
+  evento.preventDefault();
+  const botao = document.getElementById('btn-buscar');
+  botao.disabled = true;
+  botao.textContent = 'Buscando...';
+
+  const par = document.getElementById('par').value;
+  const cep = document.getElementById('cep').value;
+  const ano = document.getElementById('ano').value;
+
+  try {
+    const resp = await fetch(`/api/agregado?par=${encodeURIComponent(par)}&cep=${encodeURIComponent(cep)}&ano=${encodeURIComponent(ano)}`);
+    const dado = await resp.json();
+
+    document.getElementById('cards-resultado').innerHTML =
+        cardCotacao(dado.cotacao) + cardCep(dado.cep) + cardFeriados(dado.feriados);
+
+    await Promise.all([carregarHistorico(), carregarTendencia(), carregarMetricas()]);
+  } catch (e) {
+    document.getElementById('cards-resultado').innerHTML =
+        `<div class="card"><p class="msg">Erro ao consultar: ${e}</p></div>`;
+  } finally {
+    botao.disabled = false;
+    botao.textContent = 'Buscar';
+  }
+}
+
+async function carregarHistorico() {
+  const resp = await fetch('/api/historico?limite=10');
+  const lista = await resp.json();
+  const wrap = document.getElementById('historico-wrap');
+
+  if (!lista.length) {
+    wrap.innerHTML = '<p class="vazio">Nenhuma consulta ainda.</p>';
+    return;
+  }
+
+  const linhas = lista.map(h => `
+      <tr>
+        <td>${h.par}</td>
+        <td>${h.cep}</td>
+        <td class="status-cell"><span class="${h.cotacaoStatus}">${h.cotacaoStatus}</span></td>
+        <td class="status-cell"><span class="${h.cepStatus}">${h.cepStatus}</span></td>
+        <td class="status-cell"><span class="${h.feriadosStatus}">${h.feriadosStatus}</span></td>
+        <td>${h.duracaoMs} ms</td>
+        <td>${new Date(h.criadoEm).toLocaleTimeString('pt-BR')}</td>
+      </tr>`).join('');
+
+  wrap.innerHTML = `
+    <div class="tabela-scroll">
+    <table>
+      <thead>
+        <tr><th>Par</th><th>CEP</th><th>Cotação</th><th>CEP</th><th>Feriados</th><th>Duração</th><th>Quando</th></tr>
+      </thead>
+      <tbody>${linhas}</tbody>
+    </table>
+    </div>`;
+}
+
+let graficoTendencia;
+async function carregarTendencia() {
+  const resp = await fetch('/api/historico/tendencia?janela=3');
+  const pontos = await resp.json();
+  const vazio = document.getElementById('tendencia-vazio');
+  const canvas = document.getElementById('grafico-tendencia');
+
+  if (!pontos.length) {
+    vazio.style.display = 'block';
+    canvas.style.display = 'none';
+    return;
+  }
+  vazio.style.display = 'none';
+  canvas.style.display = 'block';
+
+  const dados = pontos.map(p => p.duracaoMediaMs);
+  const rotulos = pontos.map((_, i) => `janela ${i + 1}`);
+
+  if (graficoTendencia) graficoTendencia.destroy();
+  graficoTendencia = new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels: rotulos,
+      datasets: [{ label: 'Duração média (ms)', data: dados, borderColor: '#5b8def', backgroundColor: 'rgba(91,141,239,0.15)', tension: 0.3, fill: true }]
+    },
+    options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { color: '#93a3c2' } }, x: { ticks: { color: '#93a3c2' } } } }
+  });
+}
+
+let graficoMetricas;
+async function carregarMetricas() {
+  const resp = await fetch('/api/metricas');
+  const metricas = await resp.json();
+  const vazio = document.getElementById('metricas-vazio');
+  const canvas = document.getElementById('grafico-metricas');
+
+  if (!metricas.length) {
+    vazio.style.display = 'block';
+    canvas.style.display = 'none';
+    return;
+  }
+  vazio.style.display = 'none';
+  canvas.style.display = 'block';
+
+  const fontes = [...new Set(metricas.map(m => m.fonte))];
+  const statuses = ['SUCESSO', 'FALHA', 'TIMEOUT'];
+
+  const datasets = statuses.map(status => ({
+    label: status,
+    backgroundColor: STATUS_COLORS[status],
+    data: fontes.map(fonte => {
+      const m = metricas.find(x => x.fonte === fonte && x.status === status);
+      return m ? m.total : 0;
+    })
+  }));
+
+  if (graficoMetricas) graficoMetricas.destroy();
+  graficoMetricas = new Chart(canvas, {
+    type: 'bar',
+    data: { labels: fontes, datasets },
+    options: {
+      responsive: true,
+      plugins: { legend: { labels: { color: '#e6ecf7' } } },
+      scales: {
+        y: { beginAtZero: true, ticks: { color: '#93a3c2', stepSize: 1 } },
+        x: { ticks: { color: '#93a3c2' } }
+      }
+    }
+  });
+}
+
+document.getElementById('form-busca').addEventListener('submit', buscar);
+
+carregarHistorico();
+carregarTendencia();
+carregarMetricas();
+</script>
+</body>
+</html>
